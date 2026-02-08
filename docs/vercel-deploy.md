@@ -60,3 +60,4 @@ In the project import screen (or later: **Project → Settings → Environment V
 - **Build fails**: Check the build logs. Common issues: missing env vars, or Node/npm version (Vercel usually picks the right one from the repo).
 - **App loads but “database error”**: Ensure `DATABASE_URL` is set and is the **Transaction** pooler URI (port 6543), not the direct connection.
 - **Admin not accessible**: Set `ADMIN_EMAIL` to the email you use to sign in; only that user can open `/admin`.
+- **"Serverless Function has exceeded the unzipped maximum size of 250 MB"**: The repo uses `vercel.json` with `installCommand: "npm install --no-optional"` so TensorFlow/face-api (optional) are not installed on Vercel. Analysis still works but without face detection; if you override Install Command in the Vercel UI, keep `--no-optional`.
