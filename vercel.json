@@ -1,4 +1,4 @@
 {
 	"buildCommand": "npm run build",
-	"installCommand": "npm install --no-optional"
+	"installCommand": "npm install --no-optional && npm install @rollup/rollup-linux-x64-gnu"
 }
