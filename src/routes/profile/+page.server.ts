@@ -1,0 +1,152 @@
+import type { Actions, PageServerLoad } from './$types';
+import { db } from '$lib/server/db';
+import {
+	user,
+	assessment,
+	oneToOneBooking,
+	productInterest,
+	classInterest
+} from '$lib/server/db/schema';
+import { eq, desc, and, count, gte } from 'drizzle-orm';
+import { getUserProfile, setUserProfile } from '$lib/server/userProfile';
+import { fail } from '@sveltejs/kit';
+import bcrypt from 'bcryptjs';
+import type { FaceDetails } from '$lib/types/skin';
+
+function rowToFaceDetails(row: Record<string, unknown>): FaceDetails | undefined {
+	const age = row.faceDetailsAge ?? row.face_details_age;
+	const gender = row.faceDetailsGender ?? row.face_details_gender;
+	if (age == null || (gender !== 'male' && gender !== 'female')) return undefined;
+	return {
+		age: Number(age),
+		gender: gender as 'male' | 'female'
+	};
+}
+
+/** Derive age and gender from the user's latest saved assessment that has face details. */
+function getProfileFromUserAssessments(userId: string): { age: number; gender: 'male' | 'female' } | null {
+	const rows = db
+		.select()
+		.from(assessment)
+		.where(eq(assessment.userId, userId))
+		.orderBy(desc(assessment.createdAt))
+		.limit(50)
+		.all();
+	for (const row of rows) {
+		const fd = rowToFaceDetails(row);
+		if (fd) return { age: fd.age, gender: fd.gender };
+	}
+	return null;
+}
+
+export const load: PageServerLoad = async ({ parent, locals }) => {
+	await parent(); // ensure layout ran (user is set)
+	const userId = locals.user!.id;
+
+	const editedProfile = getUserProfile(userId);
+	const assessedProfile = getProfileFromUserAssessments(userId);
+	const age = editedProfile?.age ?? assessedProfile?.age ?? null;
+	const gender = editedProfile?.gender ?? assessedProfile?.gender ?? null;
+	const hasProfile = age != null && gender != null;
+
+	// Activity counts (for overview)
+	const now = new Date();
+	const [assessmentsResult, bookingsResult, productInterestResult, classInterestResult] = [
+		db.select({ count: count() }).from(assessment).where(eq(assessment.userId, userId)).get(),
+		db
+			.select({ count: count() })
+			.from(oneToOneBooking)
+			.where(
+				and(eq(oneToOneBooking.userId, userId), gte(oneToOneBooking.startAt, now))
+			)
+			.get(),
+		db.select({ count: count() }).from(productInterest).where(eq(productInterest.userId, userId)).get(),
+		db.select({ count: count() }).from(classInterest).where(eq(classInterest.userId, userId)).get()
+	];
+
+	return {
+		user: locals.user,
+		email: locals.user!.email,
+		age,
+		gender,
+		hasProfile,
+		profileSource: editedProfile ? ('edited' as const) : assessedProfile ? ('saved' as const) : null,
+		assessmentsCount: assessmentsResult?.count ?? 0,
+		upcomingBookingsCount: bookingsResult?.count ?? 0,
+		productInterestsCount: productInterestResult?.count ?? 0,
+		classInterestsCount: classInterestResult?.count ?? 0
+	};
+};
+
+export const actions: Actions = {
+	updateProfile: async (event) => {
+		if (!event.locals.user) return fail(401, { message: 'Sign in to update your profile' });
+		const form = await event.request.formData();
+		const ageParam = (form.get('profileAge') as string)?.trim() ?? '';
+		const genderParam = (form.get('profileGender') as string)?.trim() ?? '';
+		const age = ageParam ? parseInt(ageParam, 10) : NaN;
+		const gender = genderParam === 'male' || genderParam === 'female' ? genderParam : null;
+		if (Number.isNaN(age) || age < 1 || age > 120) {
+			return fail(400, {
+				message: 'Please enter an age between 1 and 120.',
+				profileAge: ageParam,
+				profileGender: genderParam
+			});
+		}
+		if (!gender) {
+			return fail(400, {
+				message: 'Please choose male or female.',
+				profileAge: ageParam,
+				profileGender: genderParam
+			});
+		}
+		const result = setUserProfile(event.locals.user.id, { age, gender });
+		if (!result.ok) return fail(400, { message: result.error, profileAge: ageParam, profileGender: genderParam });
+		return { success: true, message: 'Profile updated.', profileAge: String(age), profileGender: gender };
+	},
+
+	updatePassword: async (event) => {
+		if (!event.locals.user) return fail(401, { message: 'Sign in to change your password' });
+		const form = await event.request.formData();
+		const currentPassword = (form.get('currentPassword') as string) ?? '';
+		const newPassword = (form.get('newPassword') as string) ?? '';
+		const confirmPassword = (form.get('confirmPassword') as string) ?? '';
+
+		if (!currentPassword) return fail(400, { message: 'Enter your current password.' });
+		if (newPassword.length < 8) return fail(400, { message: 'New password must be at least 8 characters.' });
+		if (newPassword !== confirmPassword) return fail(400, { message: 'New password and confirmation do not match.' });
+
+		const row = db.select().from(user).where(eq(user.id, event.locals.user!.id)).limit(1).all()[0];
+		if (!row) return fail(500, { message: 'Account not found.' });
+		const valid = await bcrypt.compare(currentPassword, row.passwordHash);
+		if (!valid) return fail(400, { message: 'Current password is incorrect.' });
+
+		const passwordHash = await bcrypt.hash(newPassword, 10);
+		db.update(user).set({ passwordHash }).where(eq(user.id, event.locals.user!.id)).run();
+		return { success: true, message: 'Password updated. Use your new password next time you sign in.' };
+	},
+
+	updateEmail: async (event) => {
+		if (!event.locals.user) return fail(401, { message: 'Sign in to change your email' });
+		const form = await event.request.formData();
+		const newEmail = (form.get('newEmail') as string)?.trim().toLowerCase() ?? '';
+		const password = (form.get('password') as string) ?? '';
+
+		if (!newEmail) return fail(400, { message: 'Enter a new email address.', newEmail: '' });
+		// Basic email format
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return fail(400, { message: 'Please enter a valid email address.', newEmail });
+		if (newEmail === event.locals.user.email) return fail(400, { message: 'New email is the same as your current one.', newEmail });
+		if (!password) return fail(400, { message: 'Enter your current password to confirm.', newEmail });
+
+		const row = db.select().from(user).where(eq(user.id, event.locals.user!.id)).limit(1).all()[0];
+		if (!row) return fail(500, { message: 'Account not found.' });
+		const valid = await bcrypt.compare(password, row.passwordHash);
+		if (!valid) return fail(400, { message: 'Password is incorrect.', newEmail });
+
+		const existing = db.select({ id: user.id }).from(user).where(eq(user.email, newEmail)).limit(1).all();
+		if (existing.length > 0) return fail(409, { message: 'An account with this email already exists.', newEmail });
+
+		db.update(user).set({ email: newEmail }).where(eq(user.id, event.locals.user!.id)).run();
+		return { success: true, message: 'Email updated. Use your new email next time you sign in.', newEmail };
+	}
+};

@@ -1,0 +1,33 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# Test / Playwright
+playwright-report
+test-results
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+/data
+
+# Cursor (local config and logs; may contain MCP tokens)
+.cursor
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

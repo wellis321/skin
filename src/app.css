@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+
+@theme {
+	--font-sans: 'DM Sans', system-ui, sans-serif;
+}
+
+body {
+	@apply bg-stone-50 text-stone-900 antialiased;
+}
+
+/* Pointer cursor on interactive elements */
+a[href],
+button,
+[role='button'],
+input[type='submit'],
+input[type='button'],
+input[type='reset'],
+select,
+label[for] {
+	cursor: pointer;
+}
+
+button:disabled,
+input:disabled {
+	cursor: not-allowed;
+}

@@ -1,0 +1,125 @@
+this appp is to be used by people to assess the quality of their skin. 
+They should be able to use it and then be given feedback on where they can be helped to make improvements.
+
+
+It should be a lot like the garnier skin coach where it takes into account the light and the face position https://www.garnier.co.uk/skincoach-diagnosis
+
+It should be veryy simple to get the user from uploading or taking a photo to getting feedback on their skin.
+
+They should get feedback on what is good and how to keep it that way and what needs attention and how to do that.
+
+We should focuas on skin wrinkles and lines.
+
+Then  spots and blemishes also.
+
+If there are known datasets available to use or open source apis or other available ways to drive thee app then we should use them.
+
+The app nneeds to have super simple work flows for users and can use any tech stack whatsover.
+
+The UI needs to be very high end and informative.
+
+We needs pages that have clear instructions like remove glasses etc. Other tools seem to walk the person down the tool instead of being autommated like https://www.rocskincare.com/pages/roc-ai-skin-insight?srsltid=AfmBOopig-k0qQvPw2VWLKsEkQytTEAuDLNS-qZBq_AmjjxLORPFbBB_
+
+If we can automate as much as possible thats the best.
+
+We want to build an mvp that looks good and then iterate on top of that.
+
+Thee products we are selling will be things like -
+
+Face Yoga Classes
+Live coaching + corrections + tailored variations
+
+Includes warm-up, cool-down, posture and relaxation
+
+You'll need: yoga mat, facial oil/serum, gua sha tool
+Weekly Online Group Workshops
+
+£20 (45 mins)
+Themes:
+
+    Full face rejuvenation
+    Strong eyelids, toned cheeks
+    Radiant eyes + smooth forehead
+    Happy smile & rounded cheeks
+    Sculpted chin/neck
+    Relaxation & stress release
+
+Step-by-step learning, personalised feedback, supportive community.
+
+6–8 sessions recommended to master beyond techniques.
+
+You'll need: facial oil/serum, 
+
+
+One-to-One Zoom Programme
+
+4 x 45 mins over 1 month
+
+Tailored support + sample products + worksheets
+
+• Noticeable lift, tone, radiance
+
+• Build routines you can maintain yourself
+Includes:
+
+    Personal consultation
+    Weekly live sessions
+    Custom exercises & tools
+    Progress reviews
+    WhatsApp/email support
+
+Each session includes warm-up, cool-down, posture work and holistic lifestyle advice (sleep, stress, nutrition, supplements).
+
+Sculpted Chin / Neck – Beyond Gravity
+
+Focus: Jawline, double chin, neck tone
+
+Method: Neck stretches, platysma toning, gua sha sculpting, lymph drainage
+
+Benefits: Defined jaw, smoother neck, reduced sagging, improved posture
+
+Radiant Eyes & Cheeks – Beyond Glow
+
+Focus: Mid-face rejuvenation and circulation
+
+Method: Cheek sculpting, lymph drainage, under-eye release, breathwork
+
+Benefits: Reduced puffiness, colour return, lifted cheeks, youthful energy
+
+Full Face Rejuvenation – Beyond Renewal
+
+Focus: Complete shoulders-up workout + relaxation
+
+Method: Face yoga, gua sha, lymphatic sweep, acupressure, posture reset
+
+Benefits: Tone, lift, circulation, glow, tension release
+
+
+25–34: "Stress & Tech Face" – Beyond Burnout
+
+Digital detox, jaw/eye strain, prevention
+
+Includes: Tension release, gua sha for puffiness, posture reset, lymph flow
+
+
+35–55: "Structure & Lift" – Beyond Gravity
+
+Aging, contour loss, midlife reset
+
+Includes: Osteo alignment, sculpting massage, collagen boost, fascia release
+
+
+55+: "Gentle Rebuild" – Beyond Age
+
+Thinning skin, elasticity, confidence
+
+Includes: Gentle lymph flow, breath-led release, low-pressure gua sha, tone focus
+
+
+You are a high end web development designer with brilliant front end UI and UX skills able to build captivatating and eengaging modern frontends that ensure users remain interested and engaged with the ccontent and imagery.
+
+everything about the app shouldd use english versions of words and not any americanised versions so no organization only ever organisation.
+
+
+
+
