@@ -54,8 +54,8 @@ Run `npm run test:unit` to run unit tests. E2E tests require Playwright browsers
 
 The app uses **SQLite** locally (default `./data/sqlite.db`) and **Postgres** on Vercel (no persistent filesystem). Use [Supabase](https://supabase.com) (or another Postgres host) and set `DATABASE_URL` to your Postgres connection string.
 
-1. **Supabase**: Create a project, get the connection string (Settings → Database → URI). Run Postgres migrations once: `DATABASE_URL="postgresql://..." npx drizzle-kit migrate` (migrations live in `drizzle-pg/`).
-2. **Vercel**: Import the GitHub repo, set environment variables: `DATABASE_URL`, `ADMIN_EMAIL`, and optionally `RESEND_API_KEY`, `RESEND_FROM`. Deploy; adapter-auto uses adapter-vercel on Vercel.
+1. **Supabase**: Get the connection string by clicking **Connect** at the top of the project dashboard (see [docs/supabase-connection-string.md](docs/supabase-connection-string.md)). Run Postgres migrations once: `DATABASE_URL="postgresql://..." npx drizzle-kit migrate` (migrations live in `drizzle-pg/`).
+2. **Vercel**: Import the GitHub repo, set environment variables: `DATABASE_URL`, `ADMIN_EMAIL`, and optionally `RESEND_API_KEY`, `RESEND_FROM`. Deploy; adapter-auto uses adapter-vercel on Vercel. Step-by-step: [docs/vercel-deploy.md](docs/vercel-deploy.md).
 
 ## MCP (Cursor)
 

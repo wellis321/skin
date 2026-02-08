@@ -101,14 +101,21 @@
 		return `M ${points.join(' L ')}`;
 	});
 
-	function formatDate(d: string | Date): string {
-		const date = typeof d === 'string' ? new Date(d) : d;
-		return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+	function toDate(d: string | Date | number | null | undefined): Date | null {
+		if (d == null) return null;
+		if (d instanceof Date) return isNaN(d.getTime()) ? null : d;
+		if (typeof d === 'number') return new Date(d);
+		const parsed = new Date(d as string);
+		return isNaN(parsed.getTime()) ? null : parsed;
+	}
+	function formatDate(d: string | Date | number | null | undefined): string {
+		const date = toDate(d);
+		return date ? date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 	}
 	/** Short date for x-axis labels (e.g. 7 Feb). */
-	function formatAxisDate(d: string | Date): string {
-		const date = typeof d === 'string' ? new Date(d) : d;
-		return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+	function formatAxisDate(d: string | Date | number | null | undefined): string {
+		const date = toDate(d);
+		return date ? date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—';
 	}
 	/** Show every nth x-axis label when there are many points. */
 	const xAxisLabelStep = $derived(sorted.length > 8 ? Math.max(1, Math.floor(sorted.length / 6)) : 1);
