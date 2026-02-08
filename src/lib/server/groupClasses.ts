@@ -1,24 +1,10 @@
 /**
  * Admin-managed group classes / events. Replaces static list from $lib/data/classes.
  */
-import { db, sqlite } from '$lib/server/db';
+import { db } from '$lib/server/db';
 import { groupClass } from '$lib/server/db/schema';
 import { eq, gte, asc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-
-// #region agent log
-let insertGroupClassStmt: ReturnType<typeof sqlite.prepare>;
-try {
-	insertGroupClassStmt = sqlite.prepare(
-		`INSERT INTO group_class (id, title, product_slug, start_at, end_at, description, max_attendees, booking_url, created_at)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	);
-	fetch('http://127.0.0.1:7252/ingest/ee894969-bc03-4158-b6fa-803eb22c2a6d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'groupClasses.ts:prepare',message:'prepare ok',data:{},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-} catch (e) {
-	fetch('http://127.0.0.1:7252/ingest/ee894969-bc03-4158-b6fa-803eb22c2a6d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'groupClasses.ts:prepare',message:'prepare threw',data:{err:String(e)},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-	throw e;
-}
-// #endregion
 
 export type OnlineClass = {
 	id: string;
@@ -94,7 +80,7 @@ export type CreateGroupClassInput = {
 	bookingUrl?: string;
 };
 
-export function createGroupClassInDb(input: CreateGroupClassInput): { ok: true; id: string } | { ok: false; error: string } {
+export async function createGroupClassInDb(input: CreateGroupClassInput): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
 	const title = input.title.trim();
 	const productSlug = input.productSlug.trim().toLowerCase();
 	if (!title) return { ok: false, error: 'Title is required' };
@@ -103,37 +89,21 @@ export function createGroupClassInDb(input: CreateGroupClassInput): { ok: true; 
 
 	const id = randomUUID();
 	const now = new Date();
-	// SQLite integer columns: store Unix timestamps in seconds
-	const startAtSec = Math.floor(input.startAt.getTime() / 1000);
-	const endAtSec = Math.floor(input.endAt.getTime() / 1000);
-	const createdAtSec = Math.floor(now.getTime() / 1000);
 	const description = input.description?.trim() || null;
 	const maxAttendees = input.maxAttendees ?? null;
 	const bookingUrl = input.bookingUrl?.trim() || null;
 
-	// #region agent log
-	try {
-		require('fs').appendFileSync('/Users/wellis/Desktop/Cursor/skin/.cursor/debug.log', JSON.stringify({location:'groupClasses:createGroupClassInDb',message:'before run',hypothesisId:'A',id,startAtSec,endAtSec,timestamp:Date.now()}) + '\n');
-	} catch (_) {}
-	fetch('http://127.0.0.1:7252/ingest/ee894969-bc03-4158-b6fa-803eb22c2a6d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'groupClasses.ts:createGroupClassInDb',message:'before run',data:{id,titleLen:title.length,productSlug,startAtSec,endAtSec,createdAtSec},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-	// #endregion
-	insertGroupClassStmt.run(
+	await db.insert(groupClass).values({
 		id,
 		title,
 		productSlug,
-		startAtSec,
-		endAtSec,
+		startAt: input.startAt,
+		endAt: input.endAt,
 		description,
 		maxAttendees,
 		bookingUrl,
-		createdAtSec
-	);
-	// #region agent log
-	try {
-		require('fs').appendFileSync('/Users/wellis/Desktop/Cursor/skin/.cursor/debug.log', JSON.stringify({location:'groupClasses:createGroupClassInDb',message:'run completed',hypothesisId:'A',id,timestamp:Date.now()}) + '\n');
-	} catch (_) {}
-	fetch('http://127.0.0.1:7252/ingest/ee894969-bc03-4158-b6fa-803eb22c2a6d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'groupClasses.ts:createGroupClassInDb',message:'run completed',data:{id},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-	// #endregion
+		createdAt: now
+	});
 	return { ok: true, id };
 }
 

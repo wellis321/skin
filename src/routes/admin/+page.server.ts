@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
-import { db, sqlite } from '$lib/server/db';
+import { db } from '$lib/server/db';
 import { oneToOneBooking, productInterest, user, assessment } from '$lib/server/db/schema';
-import { desc, and, gte, lt, eq } from 'drizzle-orm';
+import { desc, and, gte, lt, eq, count } from 'drizzle-orm';
 import {
 	getGroupClasses,
 	createGroupClassInDb,
@@ -37,16 +37,14 @@ export const load: PageServerLoad = async ({ url }) => {
 		.orderBy(desc(productInterest.createdAt))
 		.limit(200);
 
-	const countBookings = sqlite.prepare('SELECT count(*) as c FROM one_to_one_booking').get() as {
-		c: number;
-	};
-	const countAssessments = sqlite.prepare('SELECT count(*) as c FROM assessment').get() as {
-		c: number;
-	};
-	const countUsers = sqlite.prepare('SELECT count(*) as c FROM user').get() as { c: number };
-	const countInterests = sqlite.prepare('SELECT count(*) as c FROM product_interest').get() as {
-		c: number;
-	};
+	const [bookingsRow] = await db.select({ c: count() }).from(oneToOneBooking);
+	const [assessmentsRow] = await db.select({ c: count() }).from(assessment);
+	const [usersRow] = await db.select({ c: count() }).from(user);
+	const [interestsRow] = await db.select({ c: count() }).from(productInterest);
+	const countBookings = { c: bookingsRow?.c ?? 0 };
+	const countAssessments = { c: assessmentsRow?.c ?? 0 };
+	const countUsers = { c: usersRow?.c ?? 0 };
+	const countInterests = { c: interestsRow?.c ?? 0 };
 
 	const usersList = await db
 		.select({ id: user.id, email: user.email, createdAt: user.createdAt })
@@ -339,7 +337,7 @@ export const actions: Actions = {
 		fetch('http://127.0.0.1:7252/ingest/ee894969-bc03-4158-b6fa-803eb22c2a6d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/+page.server.ts:createClass',message:'validation ok, before create',data:{titleLen:title.length,productSlug},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
 		// #endregion
 		try {
-			const result = createGroupClassInDb({
+			const result = await createGroupClassInDb({
 				title,
 				productSlug,
 				startAt,

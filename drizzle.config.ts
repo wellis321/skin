@@ -1,12 +1,26 @@
 import { defineConfig } from 'drizzle-kit';
 
-const dbPath = process.env.DATABASE_URL ?? './data/sqlite.db';
+const databaseUrl = process.env.DATABASE_URL ?? './data/sqlite.db';
+const isPostgres =
+	typeof databaseUrl === 'string' &&
+	(databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'));
 
-export default defineConfig({
-	schema: './src/lib/server/db/schema.ts',
-	out: './drizzle',
-	dialect: 'sqlite',
-	dbCredentials: {
-		url: dbPath
-	}
-});
+const config = isPostgres
+	? defineConfig({
+			schema: './src/lib/server/db/schema.pg.ts',
+			out: './drizzle-pg',
+			dialect: 'postgresql',
+			dbCredentials: {
+				url: databaseUrl
+			}
+		})
+	: defineConfig({
+			schema: './src/lib/server/db/schema.sqlite.ts',
+			out: './drizzle',
+			dialect: 'sqlite',
+			dbCredentials: {
+				url: databaseUrl
+			}
+		});
+
+export default config;

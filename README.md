@@ -49,3 +49,17 @@ Skin analysis is **mock** in this MVP; the interface in `src/lib/server/skinAnal
 - **E2E**: `tests/e2e/flow.spec.ts` – landing → assess → upload fixture → results
 
 Run `npm run test:unit` to run unit tests. E2E tests require Playwright browsers (`npx playwright install`) and may need to run outside restricted environments.
+
+## Deployment (Vercel + Supabase)
+
+The app uses **SQLite** locally (default `./data/sqlite.db`) and **Postgres** on Vercel (no persistent filesystem). Use [Supabase](https://supabase.com) (or another Postgres host) and set `DATABASE_URL` to your Postgres connection string.
+
+1. **Supabase**: Create a project, get the connection string (Settings → Database → URI). Run Postgres migrations once: `DATABASE_URL="postgresql://..." npx drizzle-kit migrate` (migrations live in `drizzle-pg/`).
+2. **Vercel**: Import the GitHub repo, set environment variables: `DATABASE_URL`, `ADMIN_EMAIL`, and optionally `RESEND_API_KEY`, `RESEND_FROM`. Deploy; adapter-auto uses adapter-vercel on Vercel.
+
+## MCP (Cursor)
+
+To let the assistant interact with Vercel and Supabase directly:
+
+- **Vercel MCP**: In Cursor go to **Settings → MCP → Add server**, or add to your MCP config (e.g. project-level or user-level; do not commit tokens). Use URL: `https://mcp.vercel.com`. Log in with your Vercel account when prompted.
+- **Supabase MCP**: Install/configure the Supabase MCP server (see [Supabase MCP docs](https://supabase.com/docs/guides/getting-started/mcp)), add your project reference and access token in Cursor’s MCP settings. Prefer storing the token in Cursor’s secure MCP config; keep `.cursor` in `.gitignore` so local MCP config (which may contain tokens) is never committed.
