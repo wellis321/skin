@@ -21,7 +21,7 @@
 	let sessionDetails = $state('');
 	let email = $state(user && 'email' in user ? (user.email as string) : '');
 	let submitting = $state(false);
-	let error = $state('');
+	let formError = $state('');
 	let booking = $state<{ id: string; startAt: string; endAt: string; durationMinutes: number; email?: string } | null>(null);
 
 	const dateOptions = $derived.by(() => {
@@ -41,14 +41,14 @@
 	async function loadSlots() {
 		if (!selectedDate) return;
 		loadingSlots = true;
-		error = '';
+		formError = '';
 		try {
 			const res = await fetch(
 				`/api/bookings/one-to-one/slots?date=${encodeURIComponent(selectedDate)}&duration=${duration}`
 			);
 			const data = await res.json();
 			if (!res.ok) {
-				error = data.error || 'Could not load slots';
+				formError = data.error || 'Could not load slots';
 				slots = [];
 				return;
 			}
@@ -80,15 +80,15 @@
 		if (!selectedSlot) return;
 		const needsEmail = !user && !email.trim();
 		if (needsEmail) {
-			error = 'Please enter your email';
+			formError = 'Please enter your email';
 			return;
 		}
 		if (user === undefined && email.trim() && !email.includes('@')) {
-			error = 'Please enter a valid email';
+			formError = 'Please enter a valid email';
 			return;
 		}
 		submitting = true;
-		error = '';
+		formError = '';
 		try {
 			const res = await fetch('/api/bookings/one-to-one', {
 				method: 'POST',
@@ -103,7 +103,7 @@
 			});
 			const result = await res.json();
 			if (!res.ok) {
-				error = result.error || 'Booking failed';
+				formError = result.error || 'Booking failed';
 				return;
 			}
 			booking = {
@@ -281,8 +281,8 @@
 						/>
 					</label>
 				{/if}
-				{#if error}
-					<p class="mt-3 text-sm text-red-600">{error}</p>
+				{#if formError}
+					<p class="mt-3 text-sm text-red-600">{formError}</p>
 				{/if}
 				<button
 					type="button"
