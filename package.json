@@ -49,6 +49,8 @@
 	},
 	"dependencies": {
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
+		"@tensorflow/tfjs": "^4.22.0",
+		"@vladmandic/face-api": "^1.7.15",
 		"bcryptjs": "^3.0.3",
 		"better-sqlite3": "^12.6.2",
 		"drizzle-orm": "^0.45.1",
@@ -58,7 +60,6 @@
 		"sharp": "^0.34.5"
 	},
 	"optionalDependencies": {
-		"@tensorflow/tfjs-node": "^4.22.0",
-		"@vladmandic/face-api": "^1.7.15"
+		"@tensorflow/tfjs-node": "^4.22.0"
 	}
 }

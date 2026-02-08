@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { runFaceAnalysisInBrowser } from '$lib/browser/faceAnalysis';
 	import type { SkinAnalysisResult } from '$lib/types/skin';
 
 	const STORAGE_KEY = 'skinAssessmentResult';
@@ -89,6 +90,17 @@
 		});
 	}
 
+	/** Load image into an HTMLImageElement so browser face-api can run on it. */
+	function loadImageAsElement(url: string): Promise<HTMLImageElement> {
+		return new Promise((resolve, reject) => {
+			const img = new Image();
+			img.crossOrigin = 'anonymous';
+			img.onload = () => resolve(img);
+			img.onerror = () => reject(new Error('Image failed to load'));
+			img.src = url;
+		});
+	}
+
 	async function submitPhoto() {
 		if (!selectedFile) return;
 		uploading = true;
@@ -96,15 +108,42 @@
 		try {
 			const formData = new FormData();
 			formData.set('image', selectedFile);
-			const res = await fetch('/api/analyse', {
-				method: 'POST',
-				body: formData
-			});
-			if (!res.ok) {
-				const data = await res.json().catch(() => ({}));
-				throw new Error(data.error ?? `Request failed (${res.status})`);
-			}
-			const result: SkinAnalysisResult = await res.json();
+
+			// Run server (sharp-only) and browser face detection in parallel
+			const imageUrl = previewUrl ?? URL.createObjectURL(selectedFile);
+			let serverResult: SkinAnalysisResult;
+			let browserFace: Awaited<ReturnType<typeof runFaceAnalysisInBrowser>> = null;
+
+			const serverPromise = fetch('/api/analyse', { method: 'POST', body: formData }).then(
+				async (res) => {
+					if (!res.ok) {
+						const data = await res.json().catch(() => ({}));
+						throw new Error(data.error ?? `Request failed (${res.status})`);
+					}
+					return res.json() as Promise<SkinAnalysisResult>;
+				}
+			);
+
+			const facePromise = loadImageAsElement(imageUrl)
+				.then((img) => runFaceAnalysisInBrowser(img))
+				.catch((e) => {
+					console.warn('[assess] Browser face detection failed:', e);
+					return null;
+				});
+
+			[serverResult, browserFace] = await Promise.all([serverPromise, facePromise]);
+			if (imageUrl !== previewUrl) URL.revokeObjectURL(imageUrl);
+
+			// Merge: server gives wrinkles/spots/feedback; browser adds face regions, details, structure
+			const result: SkinAnalysisResult = {
+				...serverResult,
+				...(browserFace?.faceRegions && { faceRegions: browserFace.faceRegions }),
+				...(browserFace?.faceDetails && { faceDetails: browserFace.faceDetails }),
+				...(browserFace?.structureScore != null && {
+					structureScore: browserFace.structureScore
+				})
+			};
+
 			let thumbnailBase64: string | null = null;
 			if (previewUrl) {
 				thumbnailBase64 = await createThumbnailBase64(previewUrl, selectedFile.type);
@@ -115,7 +154,6 @@
 					: { result };
 				sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 			} catch {
-				// fallback: pass via URL would be too long; show error
 				error = 'Could not save results. Please try again.';
 				uploading = false;
 				return;

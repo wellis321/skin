@@ -138,9 +138,9 @@
 	}
 
 	/** e.g. "2 weeks" or "3 months" between two dates. */
-	function timeBetween(d1: string | Date, d2: string | Date): string {
-		const a = typeof d1 === 'string' ? new Date(d1).getTime() : d1.getTime();
-		const b = typeof d2 === 'string' ? new Date(d2).getTime() : d2.getTime();
+	function timeBetween(d1: string | Date | number, d2: string | Date | number): string {
+		const a = d1 instanceof Date ? d1.getTime() : new Date(d1).getTime();
+		const b = d2 instanceof Date ? d2.getTime() : new Date(d2).getTime();
 		const days = Math.round(Math.abs(b - a) / (1000 * 60 * 60 * 24));
 		if (days < 7) return `${days} day${days === 1 ? '' : 's'}`;
 		if (days < 60) return `${Math.round(days / 7)} week${Math.round(days / 7) === 1 ? '' : 's'}`;

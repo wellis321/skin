@@ -5,9 +5,41 @@ import { getFaceRegionBuffers } from './faceRegions';
 const ANALYSIS_SIZE = 200; // Resize for fast analysis
 
 /**
- * Analyse skin from an image using texture and evenness metrics.
- * When a face is detected, measures forehead and eye regions separately for real region-based scores;
- * otherwise uses global texture/evenness with derived sub-scores. Falls back to sample results if invalid.
+ * Sharp-only analysis (texture/evenness). No face detection.
+ * Used when the client runs face detection in the browser and merges results.
+ */
+export async function analyseSkinSharpOnly(imageData: ArrayBuffer): Promise<SkinAnalysisResult> {
+	try {
+		const buffer = Buffer.from(imageData);
+		const { textureScore, evennessScore } = await computeImageMetrics(buffer);
+		const result = scoresFromMetrics(textureScore, evennessScore);
+		const { whatsWorking, needsAttention, recommendations } = generateFeedback(
+			result.wrinkles,
+			result.spots,
+			undefined
+		);
+		const productSuggestions = getProductSuggestions(
+			result.wrinkles,
+			result.spots,
+			undefined
+		);
+		return {
+			overallScore: Math.round(result.overallScore),
+			wrinkles: result.wrinkles,
+			spots: result.spots,
+			whatsWorking,
+			needsAttention,
+			recommendations,
+			productSuggestions
+		};
+	} catch {
+		return getMockAnalysis();
+	}
+}
+
+/**
+ * Full server-side analysis (face detection + sharp). Used when optional tfjs-node/face-api are installed (e.g. local dev).
+ * In production (Vercel) we use analyseSkinSharpOnly and browser-based face detection.
  */
 export async function analyseSkin(imageData: ArrayBuffer): Promise<SkinAnalysisResult> {
 	try {

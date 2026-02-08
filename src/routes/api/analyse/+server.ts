@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { analyseSkin } from '$lib/server/skinAnalysis';
+import { analyseSkinSharpOnly } from '$lib/server/skinAnalysis';
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -41,7 +41,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			);
 		}
 
-		const result = await analyseSkin(imageBuffer);
+		const result = await analyseSkinSharpOnly(imageBuffer);
 		return json(result);
 	} catch (err) {
 		console.error('analyse error:', err);
