@@ -2,7 +2,8 @@ import { mkdirSync } from 'fs';
 import { dirname } from 'path';
 import Database from 'better-sqlite3';
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
-import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
+import postgres from 'postgres';
+import { drizzle as drizzlePg } from 'drizzle-orm/postgres-js';
 import * as schemaSqlite from './schema.sqlite';
 import * as schemaPg from './schema.pg';
 
@@ -20,7 +21,9 @@ let _sqlite: Database.Database | null = null;
 function getDb(): DbInstance {
 	if (_db) return _db;
 	if (isPostgres) {
-		_db = drizzlePg(databaseUrl, { schema: schemaPg });
+		// postgres.js with prepare: false for Supabase transaction pooler (port 6543)
+		const client = postgres(databaseUrl, { prepare: false });
+		_db = drizzlePg(client, { schema: schemaPg });
 	} else {
 		const dir = dirname(databaseUrl);
 		if (dir !== '.') {
