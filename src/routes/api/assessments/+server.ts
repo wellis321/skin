@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { assessment } from '$lib/server/db/schema';
+import { assessment, user as userTable } from '$lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { generateId } from '$lib/server/id';
 import type { SkinAnalysisResult, ProductSuggestion, FaceDetails } from '$lib/types/skin';
@@ -211,6 +211,43 @@ export const POST: RequestHandler = async ({ request, locals, event }) => {
 	}
 
 	const fd = result.faceDetails;
+	
+	// Ensure user exists in database (sync might have failed in hooks)
+	try {
+		const existingUser = await db
+			.select()
+			.from(userTable)
+			.where(eq(userTable.id, locals.user.id))
+			.limit(1);
+		
+		if (existingUser.length === 0) {
+			// User doesn't exist, try to sync them
+			console.warn('[assessments POST] User not found in DB, attempting sync:', locals.user.id);
+			try {
+				const now = new Date();
+				await db.insert(userTable).values({
+					id: locals.user.id,
+					email: locals.user.email || '',
+					passwordHash: null,
+					createdAt: now
+				});
+			} catch (syncError) {
+				const syncErrorMessage = syncError instanceof Error ? syncError.message : String(syncError);
+				// If it's a unique constraint error, user might exist with different ID - check by email
+				if (syncErrorMessage.includes('unique') || syncErrorMessage.includes('duplicate')) {
+					console.error('[assessments POST] User sync failed (unique constraint):', syncErrorMessage);
+					// Continue - might be a race condition, try the insert anyway
+				} else {
+					console.error('[assessments POST] User sync failed:', syncError);
+					return json({ error: 'Failed to sync user', message: 'Internal Error' }, { status: 500 });
+				}
+			}
+		}
+	} catch (checkError) {
+		console.error('[assessments POST] Error checking user existence:', checkError);
+		// Continue anyway - might be a transient error
+	}
+
 	try {
 		await db.insert(assessment).values({
 			id,
@@ -232,7 +269,24 @@ export const POST: RequestHandler = async ({ request, locals, event }) => {
 			faceDetailsExpressions: fd?.expressions ? JSON.stringify(fd.expressions) : null
 		});
 	} catch (dbError) {
-		console.error('[assessments POST] Database insert error:', dbError);
+		const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+		const errorStack = dbError instanceof Error ? dbError.stack : undefined;
+		console.error('[assessments POST] Database insert error:', {
+			message: errorMessage,
+			stack: errorStack,
+			userId: locals.user.id,
+			assessmentId: id,
+			error: dbError
+		});
+		// Return a more specific error message if possible
+		const isForeignKeyError = errorMessage.includes('foreign key') || errorMessage.includes('violates foreign key');
+		const isUniqueError = errorMessage.includes('unique') || errorMessage.includes('duplicate');
+		if (isForeignKeyError) {
+			return json({ error: 'Invalid user', message: 'User not found' }, { status: 400 });
+		}
+		if (isUniqueError) {
+			return json({ error: 'Duplicate assessment', message: 'Assessment already exists' }, { status: 409 });
+		}
 		return json({ error: 'Failed to save assessment', message: 'Internal Error' }, { status: 500 });
 	}
 
