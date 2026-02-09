@@ -10,7 +10,6 @@ import {
 import { eq, desc, and, count, gte } from 'drizzle-orm';
 import { getUserProfile, setUserProfile } from '$lib/server/userProfile';
 import { fail } from '@sveltejs/kit';
-import bcrypt from 'bcryptjs';
 import type { FaceDetails } from '$lib/types/skin';
 
 function rowToFaceDetails(row: Record<string, unknown>): FaceDetails | undefined {
@@ -120,14 +119,15 @@ export const actions: Actions = {
 		if (newPassword.length < 8) return fail(400, { message: 'New password must be at least 8 characters.' });
 		if (newPassword !== confirmPassword) return fail(400, { message: 'New password and confirmation do not match.' });
 
-		const rows = await db.select().from(user).where(eq(user.id, event.locals.user!.id)).limit(1);
-		const row = rows[0];
-		if (!row) return fail(500, { message: 'Account not found.' });
-		const valid = await bcrypt.compare(currentPassword, row.passwordHash);
-		if (!valid) return fail(400, { message: 'Current password is incorrect.' });
+		const supabase = event.locals.supabase;
+		const { error: signInError } = await supabase.auth.signInWithPassword({
+			email: event.locals.user.email,
+			password: currentPassword
+		});
+		if (signInError) return fail(400, { message: 'Current password is incorrect.' });
 
-		const passwordHash = await bcrypt.hash(newPassword, 10);
-		await db.update(user).set({ passwordHash }).where(eq(user.id, event.locals.user!.id));
+		const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+		if (updateError) return fail(400, { message: updateError.message || 'Failed to update password.' });
 		return { success: true, message: 'Password updated. Use your new password next time you sign in.' };
 	},
 
@@ -138,21 +138,23 @@ export const actions: Actions = {
 		const password = (form.get('password') as string) ?? '';
 
 		if (!newEmail) return fail(400, { message: 'Enter a new email address.', newEmail: '' });
-		// Basic email format
 		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return fail(400, { message: 'Please enter a valid email address.', newEmail });
 		if (newEmail === event.locals.user.email) return fail(400, { message: 'New email is the same as your current one.', newEmail });
 		if (!password) return fail(400, { message: 'Enter your current password to confirm.', newEmail });
 
-		const rows = await db.select().from(user).where(eq(user.id, event.locals.user!.id)).limit(1);
-		const row = rows[0];
-		if (!row) return fail(500, { message: 'Account not found.' });
-		const valid = await bcrypt.compare(password, row.passwordHash);
-		if (!valid) return fail(400, { message: 'Password is incorrect.', newEmail });
+		const supabase = event.locals.supabase;
+		const { error: signInError } = await supabase.auth.signInWithPassword({
+			email: event.locals.user.email,
+			password
+		});
+		if (signInError) return fail(400, { message: 'Password is incorrect.', newEmail });
 
-		const existing = await db.select({ id: user.id }).from(user).where(eq(user.email, newEmail)).limit(1);
-		if (existing.length > 0) return fail(409, { message: 'An account with this email already exists.', newEmail });
-
+		const { error: updateError } = await supabase.auth.updateUser({ email: newEmail });
+		if (updateError) {
+			if (updateError.message.includes('already')) return fail(409, { message: 'An account with this email already exists.', newEmail });
+			return fail(400, { message: updateError.message || 'Failed to update email.', newEmail });
+		}
 		await db.update(user).set({ email: newEmail }).where(eq(user.id, event.locals.user!.id));
-		return { success: true, message: 'Email updated. Use your new email next time you sign in.', newEmail };
+		return { success: true, message: 'Check your new email to confirm the change. You may need to sign in again.', newEmail };
 	}
 };

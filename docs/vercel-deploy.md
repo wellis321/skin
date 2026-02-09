@@ -10,6 +10,7 @@ If you already have a project (e.g. **cv-app**) and want to point it at the skin
 2. Go to **Settings** → **Git**.
 3. Under **Connected Git Repository**, click **Disconnect** (if you want to switch repos), then **Connect Git Repository** and choose **wellis321/skin** (or your skin repo). Save.
 4. Go to **Settings** → **Environment Variables**. Remove any old vars you don’t need, then add:
+   - `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` = from Supabase Dashboard → Settings → API (for auth and email verification)
    - `DATABASE_URL` = your Supabase Transaction connection string; for Vercel use the **pooler host** (`aws-0-<region>.pooler.supabase.com`) and user `postgres.<project-ref>` — see [supabase-connection-string.md](./supabase-connection-string.md#for-vercel-required)
    - `ADMIN_EMAIL` = your email (for `/admin` access)
 5. Go to **Deployments** → open the **⋯** on the latest deployment → **Redeploy**, or push a commit to the skin repo to trigger a new deployment.
@@ -34,13 +35,16 @@ Your existing domain (e.g. `cv-app.vercel.app`) will then serve the skin app.
 
 In the project import screen (or later: **Project → Settings → Environment Variables**), add:
 
-| Name            | Value                    | Notes                                      |
-|-----------------|--------------------------|--------------------------------------------|
-| `DATABASE_URL`  | Your Supabase URI        | Use **Transaction** pooler (port 6543).    |
-| `ADMIN_EMAIL`   | Your email               | Only this user can access `/admin`.        |
-| `RESEND_API_KEY`| (optional)               | For booking emails; leave empty to skip.   |
-| `RESEND_FROM`   | (optional)               | Sender address if using Resend.            |
+| Name                         | Value                    | Notes                                                       |
+|------------------------------|--------------------------|-------------------------------------------------------------|
+| `PUBLIC_SUPABASE_URL`        | Your Supabase project URL| From Dashboard → Settings → API (e.g. `https://xxx.supabase.co`). |
+| `PUBLIC_SUPABASE_ANON_KEY`   | Your Supabase anon key   | From Dashboard → Settings → API (anon/public key).          |
+| `DATABASE_URL`               | Your Supabase URI        | Use **Transaction** pooler (port 6543).                     |
+| `ADMIN_EMAIL`                | Your email               | Only this user can access `/admin`.                        |
+| `RESEND_API_KEY`             | (optional)               | For booking emails; leave empty to skip.                   |
+| `RESEND_FROM`                | (optional)               | Sender address if using Resend.                            |
 
+- **Email verification**: In Supabase Dashboard → **Authentication** → **Providers** → **Email**, enable **Confirm email**. Under **Redirect URLs**, add your production and preview URLs (e.g. `https://your-app.vercel.app/auth/callback` and `https://*.vercel.app/auth/callback` for previews). Users will receive a confirmation email after sign-up and must click the link to sign in.
 - Use the **same** `DATABASE_URL` as in your `.env` (Supabase Transaction URI).
 - Apply to **Production** (and Preview if you want preview deployments to use the DB).
 

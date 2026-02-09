@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { oneToOneBooking } from '$lib/server/db/schema';
-import { generateId } from 'lucia';
+import { generateId } from '$lib/server/id';
 import { sendEmail } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 

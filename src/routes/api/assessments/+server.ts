@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { assessment } from '$lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { generateId } from 'lucia';
+import { generateId } from '$lib/server/id';
 import type { SkinAnalysisResult, ProductSuggestion, FaceDetails } from '$lib/types/skin';
 import sharp from 'sharp';
 import path from 'node:path';

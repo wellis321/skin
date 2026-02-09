@@ -6,9 +6,12 @@
 	let error = $state<string | null>(null);
 	let loading = $state(false);
 
+	let successMessage = $state<string | null>(null);
+
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		error = null;
+		successMessage = null;
 		loading = true;
 		try {
 			const res = await fetch('/api/auth/signup', {
@@ -19,6 +22,10 @@
 			const data = await res.json().catch(() => ({}));
 			if (!res.ok) {
 				error = data.error ?? 'Sign up failed';
+				return;
+			}
+			if (data.needsEmailConfirmation ?? data.message) {
+				successMessage = data.message ?? 'Check your email to confirm your account.';
 				return;
 			}
 			goto('/progress');
@@ -41,7 +48,10 @@
 			Create an account to save your assessments and track your progress over time.
 		</p>
 		<form class="mt-8 space-y-4" onsubmit={handleSubmit}>
-			{#if error}
+			{#if successMessage}
+				<p class="text-sm text-green-700" role="status">{successMessage}</p>
+				<p class="text-sm text-stone-600">Click the link in the email to sign in.</p>
+			{:else if error}
 				<p class="text-sm text-red-600" role="alert">{error}</p>
 			{/if}
 			<div>
@@ -72,10 +82,10 @@
 			</div>
 			<button
 				type="submit"
-				disabled={loading}
+				disabled={loading || !!successMessage}
 				class="w-full rounded-md bg-stone-900 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:ring-offset-2 disabled:opacity-70"
 			>
-				{loading ? 'Creating account…' : 'Sign up'}
+				{loading ? 'Creating account…' : successMessage ? 'Check your email' : 'Sign up'}
 			</button>
 		</form>
 		<p class="mt-6 text-center text-sm text-stone-600">

@@ -1,10 +1,10 @@
 import { pgTable, text, integer, timestamp, real, boolean } from 'drizzle-orm/pg-core';
 
-/** Lucia user table. Named "users" to avoid Postgres reserved word "user". */
+/** User table. Named "users" to avoid Postgres reserved word "user". Synced from Supabase Auth; password_hash null for Supabase users. */
 export const user = pgTable('users', {
 	id: text('id').primaryKey(),
 	email: text('email').notNull().unique(),
-	passwordHash: text('password_hash').notNull(),
+	passwordHash: text('password_hash'), // null when user is from Supabase Auth
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull()
 });
 

@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { classInterest } from '$lib/server/db/schema';
 import { getGroupClassById } from '$lib/server/groupClasses';
-import { generateId } from 'lucia';
+import { generateId } from '$lib/server/id';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const body = await request.json().catch(() => null);
