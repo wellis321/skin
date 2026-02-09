@@ -7,7 +7,8 @@ import * as schemaSqlite from './schema.sqlite';
 import * as schemaPg from './schema.pg';
 
 const databaseUrl = process.env.DATABASE_URL ?? './data/sqlite.db';
-const isPostgres =
+/** True when DATABASE_URL is a Postgres URL (e.g. on Vercel with Supabase). */
+export const isPostgres =
 	typeof databaseUrl === 'string' &&
 	(databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'));
 
