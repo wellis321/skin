@@ -21,8 +21,15 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (!existingUser) {
 			return json({ error: 'Invalid email or password' }, { status: 401 });
 		}
-
-		const valid = await bcrypt.compare(password, existingUser.passwordHash);
+		// Support both camelCase (Drizzle schema) and snake_case (raw pg result)
+		const passwordHash =
+			(existingUser as { passwordHash?: string }).passwordHash ??
+			(existingUser as { password_hash?: string }).password_hash;
+		if (!passwordHash) {
+			console.error('login: user row missing password hash');
+			return json({ error: 'Sign in failed' }, { status: 500 });
+		}
+		const valid = await bcrypt.compare(password, passwordHash);
 		if (!valid) {
 			return json({ error: 'Invalid email or password' }, { status: 401 });
 		}
