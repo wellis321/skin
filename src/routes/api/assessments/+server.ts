@@ -8,6 +8,7 @@ import type { SkinAnalysisResult, ProductSuggestion, FaceDetails } from '$lib/ty
 import sharp from 'sharp';
 import path from 'node:path';
 import fs from 'node:fs';
+import { createSupabaseServerClient } from '$lib/server/supabase';
 
 const THUMBNAILS_DIR = path.join(process.cwd(), 'data', 'thumbnails');
 const THUMB_MAX = 320;
@@ -144,8 +145,20 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	return json(filtered);
 };
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, event }) => {
 	if (!locals.user) {
+		// Log session info for debugging
+		try {
+			const supabase = createSupabaseServerClient(event);
+			const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+			console.error('[assessments POST] No user in locals:', {
+				hasSession: !!sessionData?.session,
+				sessionError: sessionError?.message,
+				userId: sessionData?.session?.user?.id
+			});
+		} catch (err) {
+			console.error('[assessments POST] Error checking session:', err);
+		}
 		return json({ error: 'Unauthorised' }, { status: 401 });
 	}
 	const body = await request.json().catch(() => null);

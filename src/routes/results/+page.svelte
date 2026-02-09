@@ -57,14 +57,18 @@
 			const res = await fetch('/api/assessments', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
 				body: JSON.stringify(body)
 			});
 			if (!res.ok) {
+				const errorData = await res.json().catch(() => ({}));
+				console.error('Failed to save assessment:', res.status, errorData);
 				saveStatus = 'error';
 				return;
 			}
 			saveStatus = 'saved';
-		} catch {
+		} catch (err) {
+			console.error('Error saving assessment:', err);
 			saveStatus = 'error';
 		}
 	}

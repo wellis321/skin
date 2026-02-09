@@ -187,7 +187,7 @@
 		if (!confirm('Delete this assessment? This cannot be undone.')) return;
 		deletingId = id;
 		try {
-			const res = await fetch(`/api/assessments/${id}`, { method: 'DELETE' });
+			const res = await fetch(`/api/assessments/${id}`, { method: 'DELETE', credentials: 'include' });
 			if (!res.ok) {
 				alert('Could not delete. Please try again.');
 				return;

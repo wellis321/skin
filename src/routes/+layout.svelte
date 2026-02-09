@@ -167,7 +167,7 @@
 					<button
 						type="button"
 						class="whitespace-nowrap rounded-md px-3 py-2 hover:bg-stone-100 hover:text-stone-900"
-						onclick={async () => { await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/'; }}
+						onclick={async () => { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); window.location.href = '/'; }}
 					>
 						Sign out
 					</button>
