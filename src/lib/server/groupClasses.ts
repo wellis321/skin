@@ -23,25 +23,25 @@ function toISOString(v: Date | number | null | undefined): string {
 	return v.toISOString();
 }
 
-function rowToClass(row: {
-	id: string;
-	title: string;
-	productSlug: string;
-	startAt: Date | number;
-	endAt: Date | number;
-	description: string | null;
-	maxAttendees: number | null;
-	bookingUrl: string | null;
-}): OnlineClass {
+/** Normalise DB row (camelCase or snake_case from Postgres) to OnlineClass. */
+function rowToClass(row: Record<string, unknown>): OnlineClass {
+	const id = String(row.id ?? '');
+	const title = String(row.title ?? '');
+	const productSlug = String(row.productSlug ?? row.product_slug ?? '');
+	const startAt = row.startAt ?? row.start_at;
+	const endAt = row.endAt ?? row.end_at;
+	const description = row.description;
+	const maxAttendees = row.maxAttendees ?? row.max_attendees;
+	const bookingUrl = row.bookingUrl ?? row.booking_url;
 	return {
-		id: row.id,
-		title: row.title,
-		productSlug: row.productSlug,
-		start: toISOString(row.startAt),
-		end: toISOString(row.endAt),
-		description: row.description ?? undefined,
-		maxAttendees: row.maxAttendees ?? undefined,
-		bookingUrl: row.bookingUrl ?? `/book?class=${encodeURIComponent(row.id)}`
+		id,
+		title,
+		productSlug,
+		start: toISOString(startAt as Date | number | null),
+		end: toISOString(endAt as Date | number | null),
+		description: description != null ? String(description) : undefined,
+		maxAttendees: typeof maxAttendees === 'number' ? maxAttendees : undefined,
+		bookingUrl: typeof bookingUrl === 'string' && bookingUrl ? bookingUrl : `/book?class=${encodeURIComponent(id)}`
 	};
 }
 

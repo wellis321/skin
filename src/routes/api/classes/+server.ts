@@ -4,7 +4,13 @@ import { getUpcomingGroupClasses } from '$lib/server/groupClasses';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const productSlug = url.searchParams.get('product');
-	const classes = getUpcomingGroupClasses();
+	let classes;
+	try {
+		classes = await getUpcomingGroupClasses();
+	} catch (err) {
+		console.error('api/classes: getUpcomingGroupClasses failed', err);
+		classes = [];
+	}
 	const filtered = productSlug ? classes.filter((c) => c.productSlug === productSlug) : classes;
 	return json(filtered);
 };

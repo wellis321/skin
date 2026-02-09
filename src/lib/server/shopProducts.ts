@@ -11,30 +11,19 @@ import {
 import { desc, eq, and, ne } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
-/** Normalise DB row to app ShopProduct shape. */
-function rowToApp(row: {
-	slug: string;
-	title: string;
-	shortDescription: string;
-	description: string;
-	price: string;
-	priceAmount: number;
-	imageUrl: string;
-	imageUrlSecondary: string | null;
-	inStock: boolean;
-	quantityLabel: string | null;
-}): AppShopProduct {
+/** Normalise DB row (camelCase or snake_case from Postgres) to app ShopProduct shape. */
+function rowToApp(row: Record<string, unknown>): AppShopProduct {
 	return {
-		slug: row.slug,
-		title: row.title,
-		shortDescription: row.shortDescription,
-		description: row.description,
-		price: row.price,
-		priceAmount: row.priceAmount,
-		imageUrl: row.imageUrl,
-		imageUrlSecondary: row.imageUrlSecondary ?? undefined,
-		quantityLabel: row.quantityLabel ?? undefined,
-		inStock: row.inStock
+		slug: String(row.slug ?? ''),
+		title: String(row.title ?? ''),
+		shortDescription: String(row.shortDescription ?? row.short_description ?? ''),
+		description: String(row.description ?? ''),
+		price: String(row.price ?? ''),
+		priceAmount: Number(row.priceAmount ?? row.price_amount ?? 0),
+		imageUrl: String(row.imageUrl ?? row.image_url ?? ''),
+		imageUrlSecondary: (row.imageUrlSecondary ?? row.image_url_secondary) != null ? String(row.imageUrlSecondary ?? row.image_url_secondary) : undefined,
+		quantityLabel: (row.quantityLabel ?? row.quantity_label) != null ? String(row.quantityLabel ?? row.quantity_label) : undefined,
+		inStock: Boolean(row.inStock ?? row.in_stock ?? true)
 	};
 }
 

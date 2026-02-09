@@ -1,8 +1,9 @@
 import type { RequestHandler } from './$types';
 import { getUpcomingGroupClasses } from '$lib/server/groupClasses';
+import type { OnlineClass } from '$lib/server/groupClasses';
 
 /** Generate iCal (RFC 5545) content for upcoming classes so users can subscribe in calendar apps. */
-function toICal(classes: ReturnType<typeof getUpcomingGroupClasses>): string {
+function toICal(classes: OnlineClass[]): string {
 	const lines: string[] = [
 		'BEGIN:VCALENDAR',
 		'VERSION:2.0',
@@ -32,7 +33,13 @@ function toICal(classes: ReturnType<typeof getUpcomingGroupClasses>): string {
 }
 
 export const GET: RequestHandler = async () => {
-	const classes = getUpcomingGroupClasses();
+	let classes: OnlineClass[];
+	try {
+		classes = await getUpcomingGroupClasses();
+	} catch (err) {
+		console.error('api/calendar/ical: getUpcomingGroupClasses failed', err);
+		classes = [];
+	}
 	const ical = toICal(classes);
 	return new Response(ical, {
 		headers: {
