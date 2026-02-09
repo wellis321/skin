@@ -10,7 +10,11 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { createSupabaseServerClient } from '$lib/server/supabase';
 
-const THUMBNAILS_DIR = path.join(process.cwd(), 'data', 'thumbnails');
+// On Vercel, use /tmp directory (only writable location)
+// Otherwise use data/thumbnails in project root
+const THUMBNAILS_DIR = process.env.VERCEL
+	? path.join('/tmp', 'thumbnails')
+	: path.join(process.cwd(), 'data', 'thumbnails');
 const THUMB_MAX = 320;
 
 function parseBody(body: unknown): SkinAnalysisResult | null {
@@ -174,7 +178,9 @@ export const POST: RequestHandler = async ({ request, locals, event }) => {
 			: null;
 
 	let thumbnailPath: string | null = null;
-	if (thumbnailBase64) {
+	// Skip thumbnail saving on Vercel since /tmp is ephemeral and files won't persist
+	// TODO: Consider using Supabase Storage for thumbnails on Vercel
+	if (thumbnailBase64 && !process.env.VERCEL) {
 		try {
 			const isWebP = thumbnailBase64.startsWith('data:image/webp;base64,');
 			const base64Data = thumbnailBase64.replace(/^data:image\/\w+;base64,/, '');
@@ -199,31 +205,37 @@ export const POST: RequestHandler = async ({ request, locals, event }) => {
 			fs.writeFileSync(filePath, thumbBuffer);
 			thumbnailPath = path.join('data', 'thumbnails', filename);
 		} catch (err) {
-			console.error('Thumbnail save error:', err);
+			console.error('[assessments POST] Thumbnail save error:', err);
 			// continue without thumbnail
 		}
 	}
 
 	const fd = result.faceDetails;
-	await db.insert(assessment).values({
-		id,
-		userId: locals.user.id,
-		createdAt,
-		overallScore: result.overallScore,
-		wrinklesScore: result.wrinkles.score,
-		wrinklesForehead: result.wrinkles.forehead,
-		wrinklesCrowFeet: result.wrinkles.crowFeet,
-		wrinklesFineLines: result.wrinkles.fineLines,
-		spotsScore: result.spots.score,
-		spotsBlemishes: result.spots.blemishes,
-		spotsHyperpigmentation: result.spots.hyperpigmentation,
-		structureScore: result.structureScore ?? null,
-		thumbnailPath,
-		faceDetailsAge: fd?.age ?? null,
-		faceDetailsGender: fd?.gender ?? null,
-		faceDetailsGenderProbability: fd?.genderProbability ?? null,
-		faceDetailsExpressions: fd?.expressions ? JSON.stringify(fd.expressions) : null
-	});
+	try {
+		await db.insert(assessment).values({
+			id,
+			userId: locals.user.id,
+			createdAt,
+			overallScore: result.overallScore,
+			wrinklesScore: result.wrinkles.score,
+			wrinklesForehead: result.wrinkles.forehead,
+			wrinklesCrowFeet: result.wrinkles.crowFeet,
+			wrinklesFineLines: result.wrinkles.fineLines,
+			spotsScore: result.spots.score,
+			spotsBlemishes: result.spots.blemishes,
+			spotsHyperpigmentation: result.spots.hyperpigmentation,
+			structureScore: result.structureScore ?? null,
+			thumbnailPath,
+			faceDetailsAge: fd?.age ?? null,
+			faceDetailsGender: fd?.gender ?? null,
+			faceDetailsGenderProbability: fd?.genderProbability ?? null,
+			faceDetailsExpressions: fd?.expressions ? JSON.stringify(fd.expressions) : null
+		});
+	} catch (dbError) {
+		console.error('[assessments POST] Database insert error:', dbError);
+		return json({ error: 'Failed to save assessment', message: 'Internal Error' }, { status: 500 });
+	}
+
 	return json({
 		id,
 		createdAt,

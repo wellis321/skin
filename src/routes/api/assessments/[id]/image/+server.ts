@@ -22,7 +22,10 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 	if (!row?.thumbnailPath) {
 		return new Response(null, { status: 404 });
 	}
-	const filePath = path.join(process.cwd(), row.thumbnailPath);
+	// Handle both absolute paths (Vercel /tmp) and relative paths (local dev)
+	const filePath = path.isAbsolute(row.thumbnailPath)
+		? row.thumbnailPath
+		: path.join(process.cwd(), row.thumbnailPath);
 	if (!fs.existsSync(filePath)) {
 		return new Response(null, { status: 404 });
 	}
