@@ -23,20 +23,32 @@ Per [Supabase: Connect to your database](https://supabase.com/docs/guides/databa
 - **Project ref:** `qztsitnpzkdhyysmjapg`
 - **Region:** `eu-west-1`
 
-Your strings will look like one of these (replace `[YOUR-PASSWORD]`):
+### For Vercel (required)
 
-- **Direct (single session, e.g. migrations):**
+Vercel does **not** support IPv6 for outbound connections. The host `db.*.supabase.co` uses IPv6 and will cause **ENOTFOUND** or connection failures on Vercel. You **must** use the **Supavisor** pooler host (IPv4):
+
+- **Transaction mode (Vercel / serverless):** host `aws-0-eu-west-1.pooler.supabase.com`, user `postgres.qztsitnpzkdhyysmjapg`, port **6543**
+
+  ```text
+  postgres://postgres.qztsitnpzkdhyysmjapg:[YOUR-PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres
+  ```
+
+  In the Supabase Connect modal, open the **Transaction** tab and copy the URI; it should show this pooler host and `postgres.<project-ref>` user. Replace the password placeholder with your database password. Encode any special characters in the password (e.g. `?` → `%3F`).
+
+### Other environments
+
+- **Direct (single session, e.g. migrations / local):**
   ```text
   postgresql://postgres:[YOUR-PASSWORD]@db.qztsitnpzkdhyysmjapg.supabase.co:5432/postgres
   ```
 
-- **Transaction mode (recommended for Vercel/serverless):**  
-  Use the **Transaction** tab in the Connect modal and copy the URI it shows (often port **6543** and a pooler host).
+- **Transaction with db host (IPv6; do not use on Vercel):**  
+  If the Connect modal shows `db.qztsitnpzkdhyysmjapg.supabase.co:6543`, that will fail on Vercel. Use the pooler host above instead.
 
 Then set in `.env` (local) or Vercel env vars:
 
 ```text
-DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@...
+DATABASE_URL=postgres://postgres.qztsitnpzkdhyysmjapg:[YOUR-PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres
 ```
 
 Never commit the real password or full connection string to git.
