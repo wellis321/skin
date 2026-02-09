@@ -1,7 +1,7 @@
 import { pgTable, text, integer, timestamp, real, boolean } from 'drizzle-orm/pg-core';
 
-/** Lucia user table: id required; we add email and password_hash for email/password auth. */
-export const user = pgTable('user', {
+/** Lucia user table. Named "users" to avoid Postgres reserved word "user". */
+export const user = pgTable('users', {
 	id: text('id').primaryKey(),
 	email: text('email').notNull().unique(),
 	passwordHash: text('password_hash').notNull(),
