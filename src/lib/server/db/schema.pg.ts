@@ -18,13 +18,13 @@ export const userProfile = pgTable('user_profile', {
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull()
 });
 
-/** Lucia session table. expiresAt is Unix time in seconds. */
+/** Lucia session table. DrizzlePostgreSQLAdapter expects timestamp (Date), not integer. */
 export const session = pgTable('session', {
 	id: text('id').primaryKey(),
 	userId: text('user_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
-	expiresAt: integer('expires_at').notNull()
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
 });
 
 /** Saved skin assessments per user for progress-over-time. */
