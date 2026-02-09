@@ -29,6 +29,13 @@
       "when": 1770598000000,
       "tag": "0003_password_hash_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770599000000,
+      "tag": "0004_enable_rls_public_tables",
+      "breakpoints": true
     }
   ]
 }
