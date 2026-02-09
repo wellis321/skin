@@ -33,7 +33,8 @@ Vercel does **not** support IPv6 for outbound connections. The host `db.*.supaba
   postgres://postgres.qztsitnpzkdhyysmjapg:[YOUR-PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres
   ```
 
-  In the Supabase Connect modal, open the **Transaction** tab and copy the URI; it should show this pooler host and `postgres.<project-ref>` user. Replace the password placeholder with your database password. Encode any special characters in the password (e.g. `?` → `%3F`).
+  In the Supabase Connect modal, open the **Transaction** tab and copy the URI; it should show this pooler host and `postgres.<project-ref>` user. Replace the password placeholder with your database password. Encode any special characters in the password (e.g. `?` → `%3F`).  
+  **If you see "password authentication failed for user postgres"** on Vercel, the username in `DATABASE_URL` is wrong: it must be `postgres.qztsitnpzkdhyysmjapg` (with the dot and project ref), not plain `postgres`.
 
 ### Other environments
 
