@@ -12,8 +12,10 @@
 		const refreshToken = hashParams.get('refresh_token');
 		if (accessToken && refreshToken) {
 			await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+			goto('/auth/confirmed', { replaceState: true });
+		} else {
+			goto('/progress', { replaceState: true });
 		}
-		goto('/progress', { replaceState: true });
 	});
 </script>
 

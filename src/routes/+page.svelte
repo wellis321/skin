@@ -1,5 +1,16 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+
+	// If Supabase sent ?code=... to the root (email confirm), redirect to callback so the server can exchange it.
+	// Handles cases where the root is served without running +page.server.ts (e.g. cache/prerender).
+	onMount(() => {
+		const code = $page.url.searchParams.get('code');
+		if (code) {
+			goto(`/auth/callback?code=${encodeURIComponent(code)}`, { replaceState: true });
+		}
+	});
 </script>
 
 <main class="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-16">
