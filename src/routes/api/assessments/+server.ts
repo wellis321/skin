@@ -113,12 +113,11 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	}
 	const fromParam = url.searchParams.get('from');
 	const toParam = url.searchParams.get('to');
-	const rows = db
+	const rows = await db
 		.select()
 		.from(assessment)
 		.where(eq(assessment.userId, locals.user.id))
-		.orderBy(desc(assessment.createdAt))
-		.all();
+		.orderBy(desc(assessment.createdAt));
 	const list = rows.map((row) => ({
 		id: row.id,
 		createdAt: row.createdAt,

@@ -34,7 +34,7 @@ function singleEventICal(
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const id = params.id ?? '';
-	const classItem = getGroupClassById(id);
+	const classItem = await getGroupClassById(id);
 	if (!classItem) {
 		throw error(404, 'Class not found');
 	}

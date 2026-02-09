@@ -46,26 +46,25 @@ function rowToClass(row: {
 }
 
 /** All group classes from DB, ordered by start (for admin calendar). */
-export function getGroupClasses(): OnlineClass[] {
-	const rows = db.select().from(groupClass).orderBy(asc(groupClass.startAt)).all();
+export async function getGroupClasses(): Promise<OnlineClass[]> {
+	const rows = await db.select().from(groupClass).orderBy(asc(groupClass.startAt));
 	return rows.map(rowToClass);
 }
 
 /** Upcoming group classes (end >= now), for book page and public API. */
-export function getUpcomingGroupClasses(): OnlineClass[] {
+export async function getUpcomingGroupClasses(): Promise<OnlineClass[]> {
 	const now = new Date();
-	const rows = db
+	const rows = await db
 		.select()
 		.from(groupClass)
 		.where(gte(groupClass.endAt, now))
-		.orderBy(asc(groupClass.startAt))
-		.all();
+		.orderBy(asc(groupClass.startAt));
 	return rows.map(rowToClass);
 }
 
 /** One class by id. */
-export function getGroupClassById(id: string): OnlineClass | null {
-	const rows = db.select().from(groupClass).where(eq(groupClass.id, id)).limit(1).all();
+export async function getGroupClassById(id: string): Promise<OnlineClass | null> {
+	const rows = await db.select().from(groupClass).where(eq(groupClass.id, id)).limit(1);
 	if (rows.length === 0) return null;
 	return rowToClass(rows[0]);
 }
@@ -117,11 +116,11 @@ export type UpdateGroupClassInput = {
 	bookingUrl?: string;
 };
 
-export function updateGroupClassInDb(
+export async function updateGroupClassInDb(
 	id: string,
 	input: UpdateGroupClassInput
-): { ok: true } | { ok: false; error: string } {
-	const existing = db.select().from(groupClass).where(eq(groupClass.id, id)).limit(1).all();
+): Promise<{ ok: true } | { ok: false; error: string }> {
+	const existing = await db.select().from(groupClass).where(eq(groupClass.id, id)).limit(1);
 	if (existing.length === 0) return { ok: false, error: 'Class not found' };
 
 	const title = input.title.trim();
@@ -130,7 +129,8 @@ export function updateGroupClassInDb(
 	if (!productSlug) return { ok: false, error: 'Product slug is required' };
 	if (input.startAt >= input.endAt) return { ok: false, error: 'End must be after start' };
 
-	db.update(groupClass)
+	await db
+		.update(groupClass)
 		.set({
 			title,
 			productSlug,
@@ -140,14 +140,13 @@ export function updateGroupClassInDb(
 			maxAttendees: input.maxAttendees ?? null,
 			bookingUrl: input.bookingUrl?.trim() || null
 		})
-		.where(eq(groupClass.id, id))
-		.run();
+		.where(eq(groupClass.id, id));
 	return { ok: true };
 }
 
-export function deleteGroupClassInDb(id: string): { ok: true } | { ok: false; error: string } {
-	const existing = db.select().from(groupClass).where(eq(groupClass.id, id)).limit(1).all();
+export async function deleteGroupClassInDb(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+	const existing = await db.select().from(groupClass).where(eq(groupClass.id, id)).limit(1);
 	if (existing.length === 0) return { ok: false, error: 'Class not found' };
-	db.delete(groupClass).where(eq(groupClass.id, id)).run();
+	await db.delete(groupClass).where(eq(groupClass.id, id));
 	return { ok: true };
 }

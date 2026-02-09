@@ -18,7 +18,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!classIdParam) {
 		return json({ error: 'Class is required' }, { status: 400 });
 	}
-	const classItem = getGroupClassById(classIdParam);
+	const classItem = await getGroupClassById(classIdParam);
 	if (!classItem) {
 		return json({ error: 'Class not found' }, { status: 404 });
 	}

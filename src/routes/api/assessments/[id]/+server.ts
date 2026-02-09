@@ -14,12 +14,11 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 	if (!id) {
 		return json({ error: 'Not found' }, { status: 404 });
 	}
-	const rows = db
+	const rows = await db
 		.select({ thumbnailPath: assessment.thumbnailPath })
 		.from(assessment)
 		.where(and(eq(assessment.id, id), eq(assessment.userId, locals.user.id)))
-		.limit(1)
-		.all();
+		.limit(1);
 	const row = rows[0];
 	if (!row) {
 		return json({ error: 'Not found' }, { status: 404 });
@@ -36,6 +35,6 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 			// continue and delete the row anyway
 		}
 	}
-	db.delete(assessment).where(and(eq(assessment.id, id), eq(assessment.userId, locals.user.id))).run();
+	await db.delete(assessment).where(and(eq(assessment.id, id), eq(assessment.userId, locals.user.id)));
 	return json({ ok: true });
 };

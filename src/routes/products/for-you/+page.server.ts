@@ -18,14 +18,13 @@ function rowToFaceDetails(row: Record<string, unknown>): FaceDetails | undefined
 }
 
 /** Derive age and gender from the user's latest saved assessment that has face details. */
-function getProfileFromUserAssessments(userId: string): { age: number; gender: 'male' | 'female' } | null {
-	const rows = db
+async function getProfileFromUserAssessments(userId: string): Promise<{ age: number; gender: 'male' | 'female' } | null> {
+	const rows = await db
 		.select()
 		.from(assessment)
 		.where(eq(assessment.userId, userId))
 		.orderBy(desc(assessment.createdAt))
-		.limit(50)
-		.all();
+		.limit(50);
 	for (const row of rows) {
 		const fd = rowToFaceDetails(row);
 		if (fd) return { age: fd.age, gender: fd.gender };
@@ -36,7 +35,7 @@ function getProfileFromUserAssessments(userId: string): { age: number; gender: '
 export const load: PageServerLoad = async ({ locals, url }) => {
 	// When logged in: use edited profile first, then fall back to latest assessment face details
 	if (locals.user) {
-		const editedProfile = getUserProfile(locals.user.id);
+		const editedProfile = await getUserProfile(locals.user.id);
 		if (editedProfile) {
 			const profileProducts = getProductsForProfile(editedProfile.age, editedProfile.gender);
 			return {
@@ -48,7 +47,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				user: locals.user
 			};
 		}
-		const assessedProfile = getProfileFromUserAssessments(locals.user.id);
+		const assessedProfile = await getProfileFromUserAssessments(locals.user.id);
 		if (assessedProfile) {
 			const profileProducts = getProductsForProfile(assessedProfile.age, assessedProfile.gender);
 			return {
@@ -101,7 +100,7 @@ export const actions: Actions = {
 				profileGender: genderParam
 			});
 		}
-		const result = setUserProfile(event.locals.user.id, { age, gender });
+		const result = await setUserProfile(event.locals.user.id, { age, gender });
 		if (!result.ok) return fail(400, { message: result.error, profileAge: ageParam, profileGender: genderParam });
 		return { success: true, message: 'Profile updated.', profileAge: String(age), profileGender: gender };
 	}

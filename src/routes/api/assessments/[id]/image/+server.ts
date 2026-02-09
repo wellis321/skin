@@ -13,12 +13,11 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 	if (!id) {
 		return new Response(null, { status: 404 });
 	}
-	const rows = db
+	const rows = await db
 		.select({ thumbnailPath: assessment.thumbnailPath })
 		.from(assessment)
 		.where(and(eq(assessment.id, id), eq(assessment.userId, locals.user.id)))
-		.limit(1)
-		.all();
+		.limit(1);
 	const row = rows[0];
 	if (!row?.thumbnailPath) {
 		return new Response(null, { status: 404 });

@@ -24,14 +24,13 @@ function rowToFaceDetails(row: Record<string, unknown>): FaceDetails | undefined
 }
 
 /** Derive age and gender from the user's latest saved assessment that has face details. */
-function getProfileFromUserAssessments(userId: string): { age: number; gender: 'male' | 'female' } | null {
-	const rows = db
+async function getProfileFromUserAssessments(userId: string): Promise<{ age: number; gender: 'male' | 'female' } | null> {
+	const rows = await db
 		.select()
 		.from(assessment)
 		.where(eq(assessment.userId, userId))
 		.orderBy(desc(assessment.createdAt))
-		.limit(50)
-		.all();
+		.limit(50);
 	for (const row of rows) {
 		const fd = rowToFaceDetails(row);
 		if (fd) return { age: fd.age, gender: fd.gender };
@@ -43,26 +42,31 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	await parent(); // ensure layout ran (user is set)
 	const userId = locals.user!.id;
 
-	const editedProfile = getUserProfile(userId);
-	const assessedProfile = getProfileFromUserAssessments(userId);
+	const [editedProfile, assessedProfile] = await Promise.all([
+		getUserProfile(userId),
+		getProfileFromUserAssessments(userId)
+	]);
 	const age = editedProfile?.age ?? assessedProfile?.age ?? null;
 	const gender = editedProfile?.gender ?? assessedProfile?.gender ?? null;
 	const hasProfile = age != null && gender != null;
 
 	// Activity counts (for overview)
 	const now = new Date();
-	const [assessmentsResult, bookingsResult, productInterestResult, classInterestResult] = [
-		db.select({ count: count() }).from(assessment).where(eq(assessment.userId, userId)).get(),
+	const [assessmentsRows, bookingsRows, productInterestRows, classInterestRows] = await Promise.all([
+		db.select({ count: count() }).from(assessment).where(eq(assessment.userId, userId)),
 		db
 			.select({ count: count() })
 			.from(oneToOneBooking)
 			.where(
 				and(eq(oneToOneBooking.userId, userId), gte(oneToOneBooking.startAt, now))
-			)
-			.get(),
-		db.select({ count: count() }).from(productInterest).where(eq(productInterest.userId, userId)).get(),
-		db.select({ count: count() }).from(classInterest).where(eq(classInterest.userId, userId)).get()
-	];
+			),
+		db.select({ count: count() }).from(productInterest).where(eq(productInterest.userId, userId)),
+		db.select({ count: count() }).from(classInterest).where(eq(classInterest.userId, userId))
+	]);
+	const assessmentsResult = assessmentsRows[0];
+	const bookingsResult = bookingsRows[0];
+	const productInterestResult = productInterestRows[0];
+	const classInterestResult = classInterestRows[0];
 
 	return {
 		user: locals.user,
@@ -100,7 +104,7 @@ export const actions: Actions = {
 				profileGender: genderParam
 			});
 		}
-		const result = setUserProfile(event.locals.user.id, { age, gender });
+		const result = await setUserProfile(event.locals.user.id, { age, gender });
 		if (!result.ok) return fail(400, { message: result.error, profileAge: ageParam, profileGender: genderParam });
 		return { success: true, message: 'Profile updated.', profileAge: String(age), profileGender: gender };
 	},
@@ -116,13 +120,14 @@ export const actions: Actions = {
 		if (newPassword.length < 8) return fail(400, { message: 'New password must be at least 8 characters.' });
 		if (newPassword !== confirmPassword) return fail(400, { message: 'New password and confirmation do not match.' });
 
-		const row = db.select().from(user).where(eq(user.id, event.locals.user!.id)).limit(1).all()[0];
+		const rows = await db.select().from(user).where(eq(user.id, event.locals.user!.id)).limit(1);
+		const row = rows[0];
 		if (!row) return fail(500, { message: 'Account not found.' });
 		const valid = await bcrypt.compare(currentPassword, row.passwordHash);
 		if (!valid) return fail(400, { message: 'Current password is incorrect.' });
 
 		const passwordHash = await bcrypt.hash(newPassword, 10);
-		db.update(user).set({ passwordHash }).where(eq(user.id, event.locals.user!.id)).run();
+		await db.update(user).set({ passwordHash }).where(eq(user.id, event.locals.user!.id));
 		return { success: true, message: 'Password updated. Use your new password next time you sign in.' };
 	},
 
@@ -138,15 +143,16 @@ export const actions: Actions = {
 		if (newEmail === event.locals.user.email) return fail(400, { message: 'New email is the same as your current one.', newEmail });
 		if (!password) return fail(400, { message: 'Enter your current password to confirm.', newEmail });
 
-		const row = db.select().from(user).where(eq(user.id, event.locals.user!.id)).limit(1).all()[0];
+		const rows = await db.select().from(user).where(eq(user.id, event.locals.user!.id)).limit(1);
+		const row = rows[0];
 		if (!row) return fail(500, { message: 'Account not found.' });
 		const valid = await bcrypt.compare(password, row.passwordHash);
 		if (!valid) return fail(400, { message: 'Password is incorrect.', newEmail });
 
-		const existing = db.select({ id: user.id }).from(user).where(eq(user.email, newEmail)).limit(1).all();
+		const existing = await db.select({ id: user.id }).from(user).where(eq(user.email, newEmail)).limit(1);
 		if (existing.length > 0) return fail(409, { message: 'An account with this email already exists.', newEmail });
 
-		db.update(user).set({ email: newEmail }).where(eq(user.id, event.locals.user!.id)).run();
+		await db.update(user).set({ email: newEmail }).where(eq(user.id, event.locals.user!.id));
 		return { success: true, message: 'Email updated. Use your new email next time you sign in.', newEmail };
 	}
 };

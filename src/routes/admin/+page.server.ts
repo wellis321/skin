@@ -65,12 +65,12 @@ export const load: PageServerLoad = async ({ url }) => {
 		.orderBy(desc(assessment.createdAt))
 		.limit(500);
 
-	let groupClasses: ReturnType<typeof getGroupClasses>;
+	let groupClasses: Awaited<ReturnType<typeof getGroupClasses>>;
 	// #region agent log
 	fetch('http://127.0.0.1:7252/ingest/ee894969-bc03-4158-b6fa-803eb22c2a6d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/+page.server.ts:load',message:'before getGroupClasses',data:{},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
 	// #endregion
 	try {
-		groupClasses = getGroupClasses();
+		groupClasses = await getGroupClasses();
 		// #region agent log
 		fetch('http://127.0.0.1:7252/ingest/ee894969-bc03-4158-b6fa-803eb22c2a6d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/+page.server.ts:load',message:'getGroupClasses returned',data:{count:groupClasses.length},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
 		// #endregion
@@ -385,7 +385,7 @@ export const actions: Actions = {
 		const maxAttendees = maxAttendeesStr ? parseInt(maxAttendeesStr, 10) : undefined;
 		if (maxAttendees !== undefined && (Number.isNaN(maxAttendees) || maxAttendees < 1)) return fail(400, { message: 'Max attendees must be a positive number.', editClassId: classId, classForm: { title, productSlug, startAtStr, endAtStr, description, maxAttendeesStr, bookingUrl } });
 
-		const result = updateGroupClassInDb(classId, {
+		const result = await updateGroupClassInDb(classId, {
 			title,
 			productSlug,
 			startAt,
@@ -403,7 +403,7 @@ export const actions: Actions = {
 		const form = await event.request.formData();
 		const classId = (form.get('classId') as string)?.trim() ?? '';
 		if (!classId) return fail(400, { message: 'Missing class id' });
-		const result = deleteGroupClassInDb(classId);
+		const result = await deleteGroupClassInDb(classId);
 		if (!result.ok) return fail(400, { message: result.error });
 		return { success: true, message: 'Event deleted.', editClassId: null };
 	}

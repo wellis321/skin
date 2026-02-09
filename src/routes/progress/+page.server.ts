@@ -44,12 +44,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {
 		throw redirect(302, '/sign-in?redirect=/progress');
 	}
-	const rows = db
+	const rows = await db
 		.select()
 		.from(assessment)
 		.where(eq(assessment.userId, locals.user.id))
-		.orderBy(desc(assessment.createdAt))
-		.all();
+		.orderBy(desc(assessment.createdAt));
 	const assessments = rows.map((row) => ({
 		id: row.id,
 		createdAt: row.createdAt,
